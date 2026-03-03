@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>English Master Pro A1-C2</title>
+<title>English Master A1-C2</title>
+
+<meta name="theme-color" content="#4facfe">
 
 <style>
 body{
@@ -14,14 +16,20 @@ body{
     text-align:center;
 }
 
-.container{ padding:20px; }
+.container{
+    padding:15px;
+    max-width:600px;
+    margin:auto;
+}
+
+h1{ margin-top:10px; }
 
 button{
-    padding:10px;
+    padding:12px;
     margin:6px;
     border:none;
     border-radius:10px;
-    font-size:14px;
+    font-size:16px;
     cursor:pointer;
     background:white;
     font-weight:bold;
@@ -36,16 +44,16 @@ button:hover{ background:#ffd700; }
     color:#333;
     padding:15px;
     border-radius:15px;
-    margin:10px;
+    margin:10px 0;
 }
 
 .progressBar{
-    width:80%;
-    height:20px;
+    width:100%;
+    height:18px;
     background:#ddd;
-    margin:10px auto;
     border-radius:10px;
     overflow:hidden;
+    margin-bottom:10px;
 }
 
 .progressFill{
@@ -55,7 +63,7 @@ button:hover{ background:#ffd700; }
 }
 
 .level{
-    font-size:18px;
+    font-size:20px;
     font-weight:bold;
 }
 
@@ -77,13 +85,11 @@ button:hover{ background:#ffd700; }
 </div>
 
 <div id="kids" class="hidden">
-    <h2>Modo Niños</h2>
     <div id="kidsContent"></div>
     <button onclick="goHome()">Volver</button>
 </div>
 
 <div id="adult" class="hidden">
-    <h2>Modo Adultos</h2>
     <div id="adultContent"></div>
     <button onclick="goHome()">Volver</button>
 </div>
@@ -91,6 +97,10 @@ button:hover{ background:#ffd700; }
 </div>
 
 <script>
+
+/* =========================
+   CONFIGURACIÓN GENERAL
+========================= */
 
 const levels = ["A1","A2","B1","B2","C1","C2"];
 const PASS_PERCENT = 80;
@@ -108,9 +118,14 @@ function saveProgress(){
     localStorage.setItem("progress", JSON.stringify(progress));
 }
 
+/* =========================
+   VOZ
+========================= */
+
 function speak(text){
     let speech = new SpeechSynthesisUtterance(text);
     speech.lang="en-US";
+    speech.rate=0.9;
     speechSynthesis.speak(speech);
 }
 
@@ -118,7 +133,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 
 function listenAndCheck(correctAnswer, resultID){
     if(!SpeechRecognition){
-        alert("Usa Google Chrome");
+        alert("Usa Chrome en el móvil para reconocimiento de voz");
         return;
     }
 
@@ -142,6 +157,10 @@ function listenAndCheck(correctAnswer, resultID){
     };
 }
 
+/* =========================
+   NAVEGACIÓN
+========================= */
+
 function selectMode(mode){
     currentMode=mode;
     correctAnswers=0;
@@ -159,9 +178,9 @@ function goHome(){
     document.getElementById("home").classList.remove("hidden");
 }
 
-//////////////////////////////////////////////////
-// CONTENIDO COMPLETO A1 → C2
-//////////////////////////////////////////////////
+/* =========================
+   CONTENIDO POR NIVEL
+========================= */
 
 const kidsContent = {
 A1:["Red","Dog","Blue","Cat","One"],
@@ -173,22 +192,22 @@ C2:["Communication","Development","Achievement","Independence","Understanding"]
 };
 
 const adultContent = {
-A1:["hello","my name is John","I work","good morning","thank you"],
-A2:["I work every day","I like learning","I have two years experience","This is important","We are ready"],
-B1:["I am learning English","I have worked in sales","I can manage a team","This project is complex","I need more information"],
-B2:["I have experience in management","We achieved our goals","This strategy is effective","The company is growing","I solved the problem"],
-C1:["I would like to improve my professional skills","The market has changed significantly","We need a long term strategy","Leadership requires responsibility","Global competition is increasing"],
-C2:["Globalization has transformed international markets","Sustainable development is essential for future generations","Innovation drives economic growth","Effective communication is crucial in leadership","Strategic planning determines long term success"]
+A1:["hello","good morning","thank you","I work","my name is John"],
+A2:["I work every day","I like learning","This is important","We are ready","I have two years experience"],
+B1:["I am learning English","I can manage a team","This project is complex","I need more information","I have worked in sales"],
+B2:["I have experience in management","We achieved our goals","The company is growing","I solved the problem","This strategy is effective"],
+C1:["I would like to improve my professional skills","The market has changed significantly","Leadership requires responsibility","Global competition is increasing","We need a long term strategy"],
+C2:["Globalization has transformed international markets","Innovation drives economic growth","Strategic planning determines long term success","Sustainable development is essential","Effective communication is crucial in leadership"]
 };
 
-//////////////////////////////////////////////////
-// CARGA NIÑOS
-//////////////////////////////////////////////////
+/* =========================
+   CARGA NIÑOS
+========================= */
 
 function loadKids(){
 
     if(progress.kidsIndex>=levels.length){
-        document.getElementById("kidsContent").innerHTML="<h3>🏆 Completaste C2</h3>";
+        document.getElementById("kidsContent").innerHTML="<h2>🏆 Completaste C2</h2>";
         return;
     }
 
@@ -216,14 +235,14 @@ function loadKids(){
     document.getElementById("kidsContent").innerHTML=html;
 }
 
-//////////////////////////////////////////////////
-// CARGA ADULTOS
-//////////////////////////////////////////////////
+/* =========================
+   CARGA ADULTOS
+========================= */
 
 function loadAdult(){
 
     if(progress.adultIndex>=levels.length){
-        document.getElementById("adultContent").innerHTML="<h3>🏆 Completaste C2</h3>";
+        document.getElementById("adultContent").innerHTML="<h2>🏆 Completaste C2</h2>";
         return;
     }
 
@@ -239,7 +258,6 @@ function loadAdult(){
     lessons.forEach((sentence,i)=>{
         html+=`
         <div class="card">
-            <p>Say:</p>
             <h4>${sentence}</h4>
             <button onclick="speak('${sentence}')">🔊 Escuchar</button>
             <button onclick="listenAndCheck('${sentence}','a${i}')">🎤 Responder</button>
@@ -252,35 +270,28 @@ function loadAdult(){
     document.getElementById("adultContent").innerHTML=html;
 }
 
-//////////////////////////////////////////////////
-// EVALUACIÓN
-//////////////////////////////////////////////////
+/* =========================
+   EVALUACIÓN
+========================= */
 
 function evaluateLevel(){
-
     let percent = (correctAnswers/totalQuestions)*100;
 
     if(percent>=PASS_PERCENT){
         alert("✅ Aprobado con "+percent.toFixed(0)+"%");
-
-        if(currentMode==="kids"){
-            progress.kidsIndex++;
-        }else{
-            progress.adultIndex++;
-        }
-
+        if(currentMode==="kids") progress.kidsIndex++;
+        else progress.adultIndex++;
         saveProgress();
         selectMode(currentMode);
-
     }else{
         alert("❌ Necesitas mínimo 80%. Obtuviste "+percent.toFixed(0)+"%");
         selectMode(currentMode);
     }
 }
 
-//////////////////////////////////////////////////
-// BARRA PROGRESO
-//////////////////////////////////////////////////
+/* =========================
+   BARRA PROGRESO
+========================= */
 
 function progressBar(percent){
     return `
