@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Master Kids & Pro</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:linear-gradient(135deg,#4facfe,#00f2fe);
+    color:white;
+    text-align:center;
+}
+
+.container{
+    padding:20px;
+}
+
+button{
+    padding:15px;
+    margin:10px;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    cursor:pointer;
+    background:white;
+    color:#333;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#ffd700;
+}
+
+.hidden{
+    display:none;
+}
+
+.card{
+    background:white;
+    color:#333;
+    padding:20px;
+    border-radius:15px;
+    margin:10px;
+}
+
+input{
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #ccc;
+    margin:10px;
+}
+
+.star{
+    font-size:25px;
+    color:gold;
+}
+
+.level{
+    font-size:18px;
+    font-weight:bold;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>🎓 English Master</h1>
+
+<div id="home">
+    <button onclick="selectMode('kids')">👶 Modo Niños</button>
+    <button onclick="selectMode('adult')">👨‍💼 Modo Adultos</button>
+</div>
+
+<div id="kids" class="hidden">
+    <h2>Aprendamos Inglés</h2>
+    <div id="kidsContent"></div>
+    <button onclick="goHome()">Volver</button>
+</div>
+
+<div id="adult" class="hidden">
+    <h2>Modo Adultos</h2>
+    <div id="adultContent"></div>
+    <button onclick="goHome()">Volver</button>
+</div>
+
+</div>
+
+<script>
+
+let progress = JSON.parse(localStorage.getItem("progress")) || {
+    stars:0,
+    adultLevel:null
+};
+
+function saveProgress(){
+    localStorage.setItem("progress", JSON.stringify(progress));
+}
+
+function speak(text){
+    let speech = new SpeechSynthesisUtterance(text);
+    speech.lang="en-US";
+    speechSynthesis.speak(speech);
+}
+
+function selectMode(mode){
+    document.getElementById("home").classList.add("hidden");
+    document.getElementById(mode).classList.remove("hidden");
+
+    if(mode==="kids"){
+        loadKids();
+    }else{
+        loadAdult();
+    }
+}
+
+function goHome(){
+    document.getElementById("kids").classList.add("hidden");
+    document.getElementById("adult").classList.add("hidden");
+    document.getElementById("home").classList.remove("hidden");
+}
+
+/////////////////////////
+// MODO NIÑOS
+/////////////////////////
+
+const kidsLessons = [
+    {word:"Red", emoji:"🔴"},
+    {word:"Blue", emoji:"🔵"},
+    {word:"Dog", emoji:"🐶"},
+    {word:"Cat", emoji:"🐱"},
+    {word:"One", emoji:"1️⃣"},
+    {word:"Two", emoji:"2️⃣"}
+];
+
+function loadKids(){
+    let content="";
+    kidsLessons.forEach(item=>{
+        content+=`
+        <div class="card">
+            <h3>${item.emoji} ${item.word}</h3>
+            <button onclick="speak('${item.word}')">🔊 Escuchar</button>
+            <button onclick="earnStar()">⭐ Aprendido</button>
+        </div>
+        `;
+    });
+
+    content+=`<p>Estrellas: <span class="star">${progress.stars}</span></p>`;
+    document.getElementById("kidsContent").innerHTML=content;
+}
+
+function earnStar(){
+    progress.stars++;
+    saveProgress();
+    loadKids();
+}
+
+/////////////////////////
+// MODO ADULTOS
+/////////////////////////
+
+const adultTest = [
+    {q:"Translate: Hola", a:"hello"},
+    {q:"Translate: Trabajo", a:"work"},
+    {q:"Complete: I ___ a developer", a:"am"}
+];
+
+function loadAdult(){
+    if(progress.adultLevel==null){
+        startTest();
+    }else{
+        showAdultLessons();
+    }
+}
+
+function startTest(){
+    let content="<h3>Test de Nivel</h3>";
+    adultTest.forEach((item,i)=>{
+        content+=`
+        <div class="card">
+        <p>${item.q}</p>
+        <input type="text" id="answer${i}">
+        </div>
+        `;
+    });
+
+    content+=`<button onclick="evaluateTest()">Finalizar Test</button>`;
+    document.getElementById("adultContent").innerHTML=content;
+}
+
+function evaluateTest(){
+    let score=0;
+
+    adultTest.forEach((item,i)=>{
+        let user=document.getElementById("answer"+i).value.toLowerCase();
+        if(user===item.a) score++;
+    });
+
+    if(score<=1){
+        progress.adultLevel="A1";
+    }else if(score==2){
+        progress.adultLevel="A2";
+    }else{
+        progress.adultLevel="B1";
+    }
+
+    saveProgress();
+    showAdultLessons();
+}
+
+function showAdultLessons(){
+    let content=`
+    <p class="level">Nivel actual: ${progress.adultLevel}</p>
+    <div class="card">
+        <h3>Simulación Entrevista</h3>
+        <p>Tell me about yourself</p>
+        <button onclick="speak('Tell me about yourself')">🔊 Escuchar</button>
+    </div>
+
+    <div class="card">
+        <h3>Vocabulario Profesional</h3>
+        <p>Teamwork</p>
+        <button onclick="speak('Teamwork')">🔊 Escuchar</button>
+    </div>
+    `;
+
+    document.getElementById("adultContent").innerHTML=content;
+}
+
+</script>
+
+</body>
+</html>
