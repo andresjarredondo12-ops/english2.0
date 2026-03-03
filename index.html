@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>English Master Kids & Pro</title>
+<title>English Master Ultimate A1-C2</title>
 
 <style>
 body{
@@ -14,53 +14,56 @@ body{
     text-align:center;
 }
 
-.container{
-    padding:20px;
-}
+.container{ padding:20px; }
 
 button{
-    padding:15px;
-    margin:10px;
+    padding:12px;
+    margin:6px;
     border:none;
     border-radius:10px;
-    font-size:16px;
+    font-size:14px;
     cursor:pointer;
     background:white;
-    color:#333;
     font-weight:bold;
 }
 
-button:hover{
-    background:#ffd700;
-}
+button:hover{ background:#ffd700; }
 
-.hidden{
-    display:none;
-}
+.hidden{ display:none; }
 
 .card{
     background:white;
     color:#333;
-    padding:20px;
+    padding:15px;
     border-radius:15px;
     margin:10px;
 }
 
-input{
-    padding:10px;
+.progressBar{
+    width:80%;
+    height:20px;
+    background:#ddd;
+    margin:10px auto;
     border-radius:10px;
-    border:1px solid #ccc;
-    margin:10px;
+    overflow:hidden;
 }
 
-.star{
-    font-size:25px;
-    color:gold;
+.progressFill{
+    height:100%;
+    background:#4caf50;
+    width:0%;
 }
 
 .level{
     font-size:18px;
     font-weight:bold;
+}
+
+.badge{
+    background:gold;
+    padding:5px 10px;
+    border-radius:10px;
+    color:black;
 }
 </style>
 </head>
@@ -68,15 +71,15 @@ input{
 
 <div class="container">
 
-<h1>🎓 English Master</h1>
+<h1>🎓 English Master A1 → C2</h1>
 
 <div id="home">
-    <button onclick="selectMode('kids')">👶 Modo Niños</button>
-    <button onclick="selectMode('adult')">👨‍💼 Modo Adultos</button>
+    <button onclick="selectMode('kids')">👶 Niños</button>
+    <button onclick="selectMode('adult')">👨‍💼 Adultos</button>
 </div>
 
 <div id="kids" class="hidden">
-    <h2>Aprendamos Inglés</h2>
+    <h2>Modo Niños</h2>
     <div id="kidsContent"></div>
     <button onclick="goHome()">Volver</button>
 </div>
@@ -91,14 +94,26 @@ input{
 
 <script>
 
+/////////////////////////////////////////////////
+// CONFIGURACIÓN GLOBAL
+/////////////////////////////////////////////////
+
+const levels = ["A1","A2","B1","B2","C1","C2"];
+
 let progress = JSON.parse(localStorage.getItem("progress")) || {
-    stars:0,
-    adultLevel:null
+    kidsIndex:0,
+    adultIndex:0,
+    kidsScore:0,
+    adultScore:0
 };
 
 function saveProgress(){
     localStorage.setItem("progress", JSON.stringify(progress));
 }
+
+/////////////////////////////////////////////////
+// VOZ
+/////////////////////////////////////////////////
 
 function speak(text){
     let speech = new SpeechSynthesisUtterance(text);
@@ -106,15 +121,47 @@ function speak(text){
     speechSynthesis.speak(speech);
 }
 
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function listenAndCheck(correctAnswer, resultID){
+    if(!SpeechRecognition){
+        alert("Usa Google Chrome para reconocimiento de voz");
+        return;
+    }
+
+    let recognition = new SpeechRecognition();
+    recognition.lang="en-US";
+    recognition.start();
+
+    recognition.onresult = function(event){
+        let userSpeech = event.results[0][0].transcript.toLowerCase();
+        let correct = correctAnswer.toLowerCase();
+
+        let result = document.getElementById(resultID);
+        result.innerHTML = "Dijiste: " + userSpeech;
+
+        if(userSpeech.includes(correct)){
+            result.innerHTML += " ✅ Correcto!";
+            increaseScore();
+        }else{
+            result.innerHTML += " ❌ Incorrecto";
+        }
+    };
+}
+
+/////////////////////////////////////////////////
+// NAVEGACIÓN
+/////////////////////////////////////////////////
+
+let currentMode="";
+
 function selectMode(mode){
+    currentMode=mode;
     document.getElementById("home").classList.add("hidden");
     document.getElementById(mode).classList.remove("hidden");
 
-    if(mode==="kids"){
-        loadKids();
-    }else{
-        loadAdult();
-    }
+    if(mode==="kids") loadKids();
+    else loadAdult();
 }
 
 function goHome(){
@@ -123,111 +170,125 @@ function goHome(){
     document.getElementById("home").classList.remove("hidden");
 }
 
-/////////////////////////
-// MODO NIÑOS
-/////////////////////////
+function increaseScore(){
+    if(currentMode==="kids") progress.kidsScore++;
+    else progress.adultScore++;
+    saveProgress();
+}
 
-const kidsLessons = [
-    {word:"Red", emoji:"🔴"},
-    {word:"Blue", emoji:"🔵"},
-    {word:"Dog", emoji:"🐶"},
-    {word:"Cat", emoji:"🐱"},
-    {word:"One", emoji:"1️⃣"},
-    {word:"Two", emoji:"2️⃣"}
-];
+/////////////////////////////////////////////////
+// CONTENIDO NIÑOS A1 → C2
+/////////////////////////////////////////////////
+
+const kidsContent = {
+A1:[{w:"Red"},{w:"Dog"}],
+A2:[{w:"Blue"},{w:"Cat"}],
+B1:[{w:"Apple"},{w:"School"}],
+B2:[{w:"Because"},{w:"Friendship"}],
+C1:[{w:"Environment"},{w:"Opportunity"}],
+C2:[{w:"Responsibility"},{w:"Knowledge"}]
+};
 
 function loadKids(){
-    let content="";
-    kidsLessons.forEach(item=>{
-        content+=`
+
+    if(progress.kidsIndex>=levels.length){
+        document.getElementById("kidsContent").innerHTML="<h3>🏆 ¡Completaste hasta C2!</h3>";
+        return;
+    }
+
+    let levelName = levels[progress.kidsIndex];
+    let lessons = kidsContent[levelName];
+
+    let html = `<p class="level">Nivel ${levelName}</p>`;
+    html += progressBar(progress.kidsScore, lessons.length);
+
+    lessons.forEach((item,i)=>{
+        html+=`
         <div class="card">
-            <h3>${item.emoji} ${item.word}</h3>
-            <button onclick="speak('${item.word}')">🔊 Escuchar</button>
-            <button onclick="earnStar()">⭐ Aprendido</button>
+            <h3>${item.w}</h3>
+            <button onclick="speak('${item.w}')">🔊 Escuchar</button>
+            <button onclick="listenAndCheck('${item.w}','k${i}')">🎤 Pronunciar</button>
+            <p id="k${i}"></p>
         </div>
         `;
     });
 
-    content+=`<p>Estrellas: <span class="star">${progress.stars}</span></p>`;
-    document.getElementById("kidsContent").innerHTML=content;
+    if(progress.kidsScore>=lessons.length){
+        html+=`<button onclick="nextKids()">🚀 Siguiente Nivel</button>`;
+    }
+
+    document.getElementById("kidsContent").innerHTML=html;
 }
 
-function earnStar(){
-    progress.stars++;
+function nextKids(){
+    progress.kidsIndex++;
+    progress.kidsScore=0;
     saveProgress();
     loadKids();
 }
 
-/////////////////////////
-// MODO ADULTOS
-/////////////////////////
+/////////////////////////////////////////////////
+// CONTENIDO ADULTOS A1 → C2
+/////////////////////////////////////////////////
 
-const adultTest = [
-    {q:"Translate: Hola", a:"hello"},
-    {q:"Translate: Trabajo", a:"work"},
-    {q:"Complete: I ___ a developer", a:"am"}
-];
+const adultContent = {
+A1:[{q:"Say: Hello",a:"hello"}],
+A2:[{q:"Say: I work every day",a:"i work every day"}],
+B1:[{q:"Say: I am learning English",a:"i am learning english"}],
+B2:[{q:"Say: I have experience in management",a:"i have experience in management"}],
+C1:[{q:"Say: I would like to improve my professional skills",a:"i would like to improve my professional skills"}],
+C2:[{q:"Say: Globalization has transformed international markets",a:"globalization has transformed international markets"}]
+};
 
 function loadAdult(){
-    if(progress.adultLevel==null){
-        startTest();
-    }else{
-        showAdultLessons();
-    }
-}
 
-function startTest(){
-    let content="<h3>Test de Nivel</h3>";
-    adultTest.forEach((item,i)=>{
-        content+=`
+    if(progress.adultIndex>=levels.length){
+        document.getElementById("adultContent").innerHTML="<h3>🏆 ¡Nivel C2 completado!</h3>";
+        return;
+    }
+
+    let levelName = levels[progress.adultIndex];
+    let lessons = adultContent[levelName];
+
+    let html = `<p class="level">Nivel ${levelName}</p>`;
+    html += progressBar(progress.adultScore, lessons.length);
+
+    lessons.forEach((item,i)=>{
+        html+=`
         <div class="card">
-        <p>${item.q}</p>
-        <input type="text" id="answer${i}">
+            <p>${item.q}</p>
+            <button onclick="speak('${item.a}')">🔊 Escuchar ejemplo</button>
+            <button onclick="listenAndCheck('${item.a}','a${i}')">🎤 Responder</button>
+            <p id="a${i}"></p>
         </div>
         `;
     });
 
-    content+=`<button onclick="evaluateTest()">Finalizar Test</button>`;
-    document.getElementById("adultContent").innerHTML=content;
-}
-
-function evaluateTest(){
-    let score=0;
-
-    adultTest.forEach((item,i)=>{
-        let user=document.getElementById("answer"+i).value.toLowerCase();
-        if(user===item.a) score++;
-    });
-
-    if(score<=1){
-        progress.adultLevel="A1";
-    }else if(score==2){
-        progress.adultLevel="A2";
-    }else{
-        progress.adultLevel="B1";
+    if(progress.adultScore>=lessons.length){
+        html+=`<button onclick="nextAdult()">🚀 Siguiente Nivel</button>`;
     }
 
-    saveProgress();
-    showAdultLessons();
+    document.getElementById("adultContent").innerHTML=html;
 }
 
-function showAdultLessons(){
-    let content=`
-    <p class="level">Nivel actual: ${progress.adultLevel}</p>
-    <div class="card">
-        <h3>Simulación Entrevista</h3>
-        <p>Tell me about yourself</p>
-        <button onclick="speak('Tell me about yourself')">🔊 Escuchar</button>
-    </div>
+function nextAdult(){
+    progress.adultIndex++;
+    progress.adultScore=0;
+    saveProgress();
+    loadAdult();
+}
 
-    <div class="card">
-        <h3>Vocabulario Profesional</h3>
-        <p>Teamwork</p>
-        <button onclick="speak('Teamwork')">🔊 Escuchar</button>
+/////////////////////////////////////////////////
+// BARRA PROGRESO
+/////////////////////////////////////////////////
+
+function progressBar(score,total){
+    let percent = (score/total)*100;
+    return `
+    <div class="progressBar">
+        <div class="progressFill" style="width:${percent}%"></div>
     </div>
     `;
-
-    document.getElementById("adultContent").innerHTML=content;
 }
 
 </script>
