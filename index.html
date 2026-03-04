@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>English Master A1-C2</title>
 
-<meta name="theme-color" content="#4facfe">
-
 <style>
 body{
     margin:0;
@@ -18,12 +16,12 @@ body{
 
 .container{
     padding:15px;
-    max-width:750px;
+    max-width:800px;
     margin:auto;
 }
 
 button{
-    padding:10px;
+    padding:8px 12px;
     margin:5px;
     border:none;
     border-radius:10px;
@@ -69,16 +67,24 @@ input{
     transition:0.3s;
 }
 
-.level{
-    font-size:20px;
-    font-weight:bold;
+.word{
+    display:inline-block;
+    padding:6px 10px;
+    margin:5px;
+    background:#4facfe;
+    color:white;
+    border-radius:8px;
+    cursor:pointer;
 }
 
-.phase{
-    font-size:16px;
-    margin-bottom:10px;
-    font-weight:bold;
+.word.selected{
+    background:#ffd700;
+    color:black;
 }
+
+.level{ font-size:20px; font-weight:bold; }
+.phase{ font-weight:bold; margin-bottom:10px; }
+
 </style>
 </head>
 <body>
@@ -106,56 +112,52 @@ input{
 
 <script>
 
-const levels = ["A1","A2","B1","B2","C1","C2"];
-const PASS_PERCENT = 80;
+const levels=["A1","A2","B1","B2","C1","C2"];
+const PASS_PERCENT=80;
 
-let progress = JSON.parse(localStorage.getItem("progress")) || {
+let progress=JSON.parse(localStorage.getItem("progress"))||{
     kidsIndex:0,
     adultIndex:0
 };
 
-let correctAnswers = 0;
-let totalQuestions = 0;
+let correctAnswers=0;
+let totalQuestions=0;
 let currentMode="";
 let currentPhase="audio";
+let currentSentence="";
+let selectedWords=[];
 
 function saveProgress(){
-    localStorage.setItem("progress", JSON.stringify(progress));
+    localStorage.setItem("progress",JSON.stringify(progress));
 }
 
-/* ================= VOZ ================= */
+/* VOZ */
 
 function speak(text){
-    let speech = new SpeechSynthesisUtterance(text);
+    let speech=new SpeechSynthesisUtterance(text);
     speech.lang="en-US";
     speech.rate=0.9;
     speechSynthesis.speak(speech);
 }
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 
-function listenAndCheck(correctAnswer, resultID){
-    if(!SpeechRecognition){
-        alert("Usa Chrome para reconocimiento de voz");
-        return;
-    }
-
-    let recognition = new SpeechRecognition();
+function listenAndCheck(correct,id){
+    if(!SpeechRecognition){ alert("Usa Chrome"); return; }
+    let recognition=new SpeechRecognition();
     recognition.lang="en-US";
     recognition.start();
-
-    recognition.onresult = function(event){
-        let userSpeech = event.results[0][0].transcript.toLowerCase().trim();
-        verify(userSpeech, correctAnswer, resultID);
+    recognition.onresult=function(e){
+        let user=e.results[0][0].transcript.toLowerCase().trim();
+        verify(user,correct,id);
     };
 }
 
-/* ================= VERIFICACIÓN ================= */
+/* VERIFICACIÓN */
 
-function verify(user, correct, id){
-    let el = document.getElementById(id);
-
-    if(user.toLowerCase().trim() === correct.toLowerCase().trim()){
+function verify(user,correct,id){
+    let el=document.getElementById(id);
+    if(user.toLowerCase().trim()===correct.toLowerCase().trim()){
         el.innerHTML="✅ Correcto";
         el.style.color="green";
         correctAnswers++;
@@ -163,25 +165,42 @@ function verify(user, correct, id){
         el.innerHTML="❌ Incorrecto<br>✔ "+correct;
         el.style.color="red";
     }
-
     updateBar();
 }
 
 function updateBar(){
-    let percent = (correctAnswers/totalQuestions)*100;
-    document.querySelector(".progressFill").style.width = percent+"%";
+    let percent=(correctAnswers/totalQuestions)*100;
+    document.querySelector(".progressFill").style.width=percent+"%";
 }
 
-/* ================= NAVEGACIÓN ================= */
+/* CONTENIDO */
+
+const content={
+kids:{
+A1:{audio:["Hello","Good morning"],grammar:["I am happy","This is my dog"]},
+A2:{audio:["Where is my book?"],grammar:["I am going to school"]},
+B1:{audio:["What are you doing?"],grammar:["I am studying because I have a test"]},
+B2:{audio:["Can you help me?"],grammar:["If I study, I will pass the exam"]},
+C1:{audio:["What would you like to be?"],grammar:["If I had more time, I would learn English"]},
+C2:{audio:["Communication is important"],grammar:["Although it was difficult, I finished the project successfully"]}
+},
+adult:{
+A1:{audio:["Hello, how are you?"],grammar:["I work every day"]},
+A2:{audio:["How much does this cost?"],grammar:["I am learning English to improve my career"]},
+B1:{audio:["I am looking for a job"],grammar:["If I have time, I will call you"]},
+B2:{audio:["Let's schedule a meeting"],grammar:["We achieved our goals because we worked hard"]},
+C1:{audio:["The market has changed"],grammar:["If we invest more, we will increase profits"]},
+C2:{audio:["Globalization affects markets"],grammar:["Strategic planning determines long term success"]}
+}
+};
+
+/* NAVEGACIÓN */
 
 function selectMode(mode){
     currentMode=mode;
     currentPhase="audio";
-    correctAnswers=0;
-
     document.getElementById("home").classList.add("hidden");
     document.getElementById(mode).classList.remove("hidden");
-
     loadContent();
 }
 
@@ -191,148 +210,116 @@ function goHome(){
     document.getElementById("home").classList.remove("hidden");
 }
 
-/* ================= CONTENIDO ================= */
-
-const content = {
-kids:{
-A1:{
-audio:["Hello","Good morning","How are you?"],
-grammar:["I am happy","This is my dog","I like apples"]
-},
-A2:{
-audio:["Where is my book?","I am at school","See you tomorrow"],
-grammar:["I am going to school","My teacher is very kind","I play with my friends every day"]
-},
-B1:{
-audio:["What are you doing?","I am watching TV","Let's go outside"],
-grammar:["I am studying because I have a test","My best friend lives near my house","We went to the park yesterday"]
-},
-B2:{
-audio:["Can you help me with this?","I forgot my homework","We should practice more"],
-grammar:["If I study, I will pass the exam","My parents were working when I arrived","I enjoy reading interesting books"]
-},
-C1:{
-audio:["What would you like to be in the future?","Education is important"],
-grammar:["If I had more time, I would learn another language","Learning new skills helps you grow"]
-},
-C2:{
-audio:["Communication is essential in life"],
-grammar:["Although it was difficult, I managed to finish the project successfully"]
-}
-},
-adult:{
-A1:{
-audio:["Hello, how are you?","Nice to meet you","I need help"],
-grammar:["I work every day","I live in this city","I like coffee"]
-},
-A2:{
-audio:["How much does this cost?","Can you repeat that?"],
-grammar:["I am learning English to improve my career","I have two years of experience"]
-},
-B1:{
-audio:["I am looking for a job","Could you explain this to me?"],
-grammar:["I have been working here for three years","If I have time, I will call you"]
-},
-B2:{
-audio:["Let's schedule a meeting","This project is challenging"],
-grammar:["We achieved our goals because we worked as a team","Although it was difficult, we succeeded"]
-},
-C1:{
-audio:["The market has changed significantly"],
-grammar:["If we invest more, we will increase our profits","Leadership requires patience and responsibility"]
-},
-C2:{
-audio:["Globalization affects international markets"],
-grammar:["Strategic planning determines long term success in competitive environments"]
-}
-}
-};
-
-/* ================= CARGA ================= */
+/* CARGA */
 
 function loadContent(){
-
-    let index = currentMode==="kids" ? progress.kidsIndex : progress.adultIndex;
-    let level = levels[index];
-
+    let index=currentMode==="kids"?progress.kidsIndex:progress.adultIndex;
     if(index>=levels.length){
-        document.getElementById(currentMode+"Content").innerHTML="<h2>🏆 Completaste C2</h2>";
+        document.getElementById(currentMode+"Content").innerHTML="<h2>🏆 Curso completado</h2>";
         return;
     }
 
-    let lessons = content[currentMode][level][currentPhase];
+    let level=levels[index];
+    let lessons=content[currentMode][level][currentPhase];
 
-    totalQuestions = lessons.length;
-    correctAnswers = 0;
+    correctAnswers=0;
+    totalQuestions=currentPhase==="audio"?lessons.length:lessons.length*2;
 
-    let html = `<p class="level">Nivel ${level}</p>`;
-    html += `<p class="phase">Fase: ${currentPhase.toUpperCase()}</p>`;
-    html += progressBar(0);
+    let html=`<p class="level">Nivel ${level}</p>`;
+    html+=`<p class="phase">Fase: ${currentPhase.toUpperCase()}</p>`;
+    html+=progressBar(0);
 
     lessons.forEach((text,i)=>{
-
         if(currentPhase==="audio"){
             html+=`
             <div class="card">
-                <button onclick="speak('${text}')">🔊 Escuchar</button>
-                <button onclick="listenAndCheck('${text}','r${i}')">🎤 Pronunciar</button>
-                <p id="r${i}"></p>
-            </div>
-            `;
+            <button onclick="speak('${text}')">🔊 Escuchar</button>
+            <button onclick="listenAndCheck('${text}','r${i}')">🎤 Pronunciar</button>
+            <p id="r${i}"></p>
+            </div>`;
         }else{
             html+=`
             <div class="card">
-                <p>Escribe la frase correctamente:</p>
-                <strong>${text}</strong>
-                <input type="text" id="w${i}">
-                <button onclick="verify(document.getElementById('w${i}').value,'${text}','g${i}')">Verificar</button>
-                <p id="g${i}"></p>
-            </div>
-            `;
+            <p><strong>Escribe:</strong></p>
+            <input type="text" id="w${i}">
+            <button onclick="verify(document.getElementById('w${i}').value,'${text}','t${i}')">Verificar</button>
+            <p id="t${i}"></p>
+            <hr>
+            <p><strong>Ordena la frase:</strong></p>
+            <div id="words${i}"></div>
+            <p id="order${i}"></p>
+            <button onclick="checkOrder('${text}','order${i}')">Comprobar Orden</button>
+            </div>`;
         }
     });
 
     html+=`<button onclick="evaluate()">Finalizar Fase</button>`;
     document.getElementById(currentMode+"Content").innerHTML=html;
+
+    if(currentPhase==="grammar"){
+        lessons.forEach((text,i)=>{
+            createWordGame(text,i);
+        });
+    }
 }
 
-/* ================= EVALUACIÓN ================= */
+function createWordGame(sentence,index){
+    let words=sentence.split(" ").sort(()=>Math.random()-0.5);
+    let container=document.getElementById("words"+index);
+    container.innerHTML="";
+    selectedWords=[];
+    words.forEach(word=>{
+        let span=document.createElement("span");
+        span.className="word";
+        span.innerText=word;
+        span.onclick=function(){
+            selectedWords.push(word);
+            span.classList.add("selected");
+            document.getElementById("order"+index).innerText=selectedWords.join(" ");
+        };
+        container.appendChild(span);
+    });
+}
+
+function checkOrder(correct,id){
+    let user=selectedWords.join(" ");
+    if(user===correct){
+        document.getElementById(id).innerHTML="✅ Orden correcto";
+        correctAnswers++;
+    }else{
+        document.getElementById(id).innerHTML="❌ Incorrecto<br>✔ "+correct;
+    }
+    updateBar();
+    selectedWords=[];
+}
+
+/* EVALUACIÓN */
 
 function evaluate(){
-
-    let percent = (correctAnswers/totalQuestions)*100;
+    let percent=(correctAnswers/totalQuestions)*100;
 
     if(percent>=PASS_PERCENT){
-
         if(currentPhase==="audio"){
             currentPhase="grammar";
-            loadContent();
         }else{
             if(currentMode==="kids") progress.kidsIndex++;
             else progress.adultIndex++;
-
             saveProgress();
             currentPhase="audio";
-            loadContent();
         }
-
+        loadContent();
     }else{
-        alert("Necesitas mínimo 80%. Obtuviste "+percent.toFixed(0)+"%");
+        alert("Necesitas 80%. Obtuviste "+percent.toFixed(0)+"%");
         loadContent();
     }
 }
 
-/* ================= BARRA ================= */
-
 function progressBar(percent){
-    return `
-    <div class="progressBar">
-        <div class="progressFill" style="width:${percent}%"></div>
-    </div>
-    `;
+    return `<div class="progressBar">
+            <div class="progressFill" style="width:${percent}%"></div>
+            </div>`;
 }
 
 </script>
-
 </body>
 </html>
