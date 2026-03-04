@@ -13,13 +13,11 @@ body{
     color:white;
     text-align:center;
 }
-
 .container{
     padding:15px;
     max-width:800px;
     margin:auto;
 }
-
 button{
     padding:8px 12px;
     margin:5px;
@@ -30,11 +28,8 @@ button{
     background:white;
     font-weight:bold;
 }
-
 button:hover{ background:#ffd700; }
-
 .hidden{ display:none; }
-
 .card{
     background:white;
     color:#333;
@@ -42,15 +37,6 @@ button:hover{ background:#ffd700; }
     border-radius:15px;
     margin:10px 0;
 }
-
-input{
-    padding:8px;
-    width:90%;
-    margin-top:5px;
-    border-radius:8px;
-    border:1px solid #ccc;
-}
-
 .progressBar{
     width:100%;
     height:18px;
@@ -59,32 +45,14 @@ input{
     overflow:hidden;
     margin-bottom:10px;
 }
-
 .progressFill{
     height:100%;
     background:#4caf50;
     width:0%;
     transition:0.3s;
 }
-
-.word{
-    display:inline-block;
-    padding:6px 10px;
-    margin:5px;
-    background:#4facfe;
-    color:white;
-    border-radius:8px;
-    cursor:pointer;
-}
-
-.word.selected{
-    background:#ffd700;
-    color:black;
-}
-
 .level{ font-size:20px; font-weight:bold; }
 .phase{ font-weight:bold; margin-bottom:10px; }
-
 </style>
 </head>
 <body>
@@ -124,7 +92,7 @@ let correctAnswers=0;
 let totalQuestions=0;
 let currentMode="";
 let currentPhase="audio";
-let exerciseStates={};
+let currentQuestionIndex=0;
 
 function saveProgress(){
     localStorage.setItem("progress",JSON.stringify(progress));
@@ -141,60 +109,61 @@ function speak(text){
 
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 
-function listenAndCheck(correct,id){
-    if(!SpeechRecognition){ alert("Usa Chrome"); return; }
+function startPronunciation(text){
+    if(!SpeechRecognition){
+        alert("Usa Chrome");
+        return;
+    }
+
     let recognition=new SpeechRecognition();
     recognition.lang="en-US";
     recognition.start();
+
     recognition.onresult=function(e){
         let user=e.results[0][0].transcript.toLowerCase().trim();
-        verify(user,correct,id);
+        checkPronunciation(user,text);
     };
 }
 
-/* VERIFICACIÓN */
+function checkPronunciation(user,correct){
 
-function verify(user,correct,id){
-    let el=document.getElementById(id);
-    if(el.dataset.answered==="true") return;
+    let result=document.getElementById("result");
 
-    if(user.toLowerCase().trim()===correct.toLowerCase().trim()){
-        el.innerHTML="✅ Correcto";
-        el.style.color="green";
+    if(user===correct.toLowerCase()){
+        result.innerHTML="✅ Correcto";
+        result.style.color="green";
         correctAnswers++;
     }else{
-        el.innerHTML="❌ Incorrecto<br>✔ "+correct;
-        el.style.color="red";
+        result.innerHTML="❌ Incorrecto<br>✔ "+correct;
+        result.style.color="red";
     }
 
-    el.dataset.answered="true";
     updateBar();
-}
 
-function updateBar(){
-    let percent=(correctAnswers/totalQuestions)*100;
-    let bar=document.querySelector(".progressFill");
-    if(bar) bar.style.width=percent+"%";
+    setTimeout(()=>{
+        currentQuestionIndex++;
+        loadAudioQuestion();
+    },1500);
 }
 
 /* CONTENIDO */
 
 const content={
 kids:{
-A1:{audio:["Hello","Good morning"],grammar:["I am happy","This is my dog"]},
-A2:{audio:["Where is my book?"],grammar:["I am going to school"]},
-B1:{audio:["What are you doing?"],grammar:["I am studying because I have a test"]},
-B2:{audio:["Can you help me?"],grammar:["If I study, I will pass the exam"]},
-C1:{audio:["What would you like to be?"],grammar:["If I had more time, I would learn English"]},
-C2:{audio:["Communication is important"],grammar:["Although it was difficult, I finished the project successfully"]}
+A1:{audio:["Hello","Good morning"]},
+A2:{audio:["Where is my book?"]},
+B1:{audio:["What are you doing?"]},
+B2:{audio:["Can you help me?"]},
+C1:{audio:["What would you like to be?"]},
+C2:{audio:["Communication is important"]}
 },
 adult:{
-A1:{audio:["Hello, how are you?"],grammar:["I work every day"]},
-A2:{audio:["How much does this cost?"],grammar:["I am learning English to improve my career"]},
-B1:{audio:["I am looking for a job"],grammar:["If I have time, I will call you"]},
-B2:{audio:["Let's schedule a meeting"],grammar:["We achieved our goals because we worked hard"]},
-C1:{audio:["The market has changed"],grammar:["If we invest more, we will increase profits"]},
-C2:{audio:["Globalization affects markets"],grammar:["Strategic planning determines long term success"]}
+A1:{audio:["Hello, how are you?"]},
+A2:{audio:["How much does this cost?"]},
+B1:{audio:["I am looking for a job"]},
+B2:{audio:["Let's schedule a meeting"]},
+C1:{audio:["The market has changed"]},
+C2:{audio:["Globalization affects markets"]}
 }
 };
 
@@ -203,9 +172,11 @@ C2:{audio:["Globalization affects markets"],grammar:["Strategic planning determi
 function selectMode(mode){
     currentMode=mode;
     currentPhase="audio";
+    currentQuestionIndex=0;
+    correctAnswers=0;
     document.getElementById("home").classList.add("hidden");
     document.getElementById(mode).classList.remove("hidden");
-    loadContent();
+    loadAudioQuestion();
 }
 
 function goHome(){
@@ -214,12 +185,9 @@ function goHome(){
     document.getElementById("home").classList.remove("hidden");
 }
 
-/* CARGA */
+/* CARGA AUDIO AUTOMÁTICO */
 
-function loadContent(){
-
-    exerciseStates={};
-    correctAnswers=0;
+function loadAudioQuestion(){
 
     let index=currentMode==="kids"?progress.kidsIndex:progress.adultIndex;
 
@@ -229,139 +197,62 @@ function loadContent(){
     }
 
     let level=levels[index];
-    let lessons=content[currentMode][level][currentPhase];
+    let lessons=content[currentMode][level].audio;
 
-    totalQuestions=currentPhase==="audio"
-        ? lessons.length
-        : lessons.length*2;
+    totalQuestions=lessons.length;
 
-    let html=`<p class="level">Nivel ${level}</p>`;
-    html+=`<p class="phase">Fase: ${currentPhase.toUpperCase()}</p>`;
-    html+=progressBar(0);
+    if(currentQuestionIndex>=lessons.length){
+        evaluate();
+        return;
+    }
 
-    lessons.forEach((text,i)=>{
+    let text=lessons[currentQuestionIndex];
 
-        if(currentPhase==="audio"){
+    let html=`
+    <p class="level">Nivel ${level}</p>
+    <p class="phase">Fase: AUDIO</p>
+    ${progressBar()}
+    <div class="card">
+        <h2>${text}</h2>
+        <button onclick="speak('${text}')">🔊 Escuchar</button>
+        <button onclick="startPronunciation('${text}')">🎤 Pronunciar</button>
+        <p id="result"></p>
+    </div>
+    `;
 
-            html+=`
-            <div class="card">
-            <button onclick="speak('${text}')">🔊 Escuchar</button>
-            <button onclick="listenAndCheck('${text}','r${i}')">🎤 Pronunciar</button>
-            <p id="r${i}"></p>
-            </div>`;
-
-        }else{
-
-            html+=`
-            <div class="card">
-            <p><strong>Escribe:</strong></p>
-            <input type="text" id="w${i}">
-            <button onclick="verify(document.getElementById('w${i}').value,'${text}','t${i}')">Verificar</button>
-            <p id="t${i}"></p>
-            <hr>
-            <p><strong>Ordena la frase:</strong></p>
-            <div id="words${i}"></div>
-            <p id="order${i}"></p>
-            <button onclick="checkOrder('${text}',${i})">Comprobar Orden</button>
-            </div>`;
-        }
-    });
-
-    html+=`<button onclick="evaluate()">Finalizar Fase</button>`;
     document.getElementById(currentMode+"Content").innerHTML=html;
-
-    if(currentPhase==="grammar"){
-        lessons.forEach((text,i)=>{
-            createWordGame(text,i);
-        });
-    }
 }
-
-/* JUEGO ORDENAR */
-
-function createWordGame(sentence,index){
-
-    let words=sentence.split(" ").sort(()=>Math.random()-0.5);
-
-    exerciseStates[index]={
-        correct:sentence,
-        selected:[],
-        answered:false
-    };
-
-    let container=document.getElementById("words"+index);
-    container.innerHTML="";
-
-    words.forEach(word=>{
-
-        let span=document.createElement("span");
-        span.className="word";
-        span.innerText=word;
-
-        span.onclick=function(){
-
-            if(exerciseStates[index].answered) return;
-
-            exerciseStates[index].selected.push(word);
-            span.classList.add("selected");
-
-            document.getElementById("order"+index)
-                .innerText=exerciseStates[index].selected.join(" ");
-        };
-
-        container.appendChild(span);
-    });
-}
-
-function checkOrder(correct,index){
-
-    let state=exerciseStates[index];
-    if(state.answered) return;
-
-    let user=state.selected.join(" ");
-
-    if(user===correct){
-        document.getElementById("order"+index).innerHTML="✅ Orden correcto";
-        correctAnswers++;
-    }else{
-        document.getElementById("order"+index).innerHTML="❌ Incorrecto<br>✔ "+correct;
-    }
-
-    state.answered=true;
-    updateBar();
-}
-
-/* EVALUACIÓN */
 
 function evaluate(){
 
     let percent=(correctAnswers/totalQuestions)*100;
 
     if(percent>=PASS_PERCENT){
+        if(currentMode==="kids") progress.kidsIndex++;
+        else progress.adultIndex++;
 
-        if(currentPhase==="audio"){
-            currentPhase="grammar";
-        }else{
-
-            if(currentMode==="kids") progress.kidsIndex++;
-            else progress.adultIndex++;
-
-            saveProgress();
-            currentPhase="audio";
-        }
-
-        loadContent();
-
+        saveProgress();
+        currentQuestionIndex=0;
+        correctAnswers=0;
+        loadAudioQuestion();
     }else{
         alert("Necesitas 80%. Obtuviste "+percent.toFixed(0)+"%");
-        loadContent();
+        currentQuestionIndex=0;
+        correctAnswers=0;
+        loadAudioQuestion();
     }
 }
 
-function progressBar(percent){
+function progressBar(){
+    let percent=(correctAnswers/totalQuestions)*100;
     return `<div class="progressBar">
             <div class="progressFill" style="width:${percent}%"></div>
             </div>`;
+}
+
+function updateBar(){
+    let percent=(correctAnswers/totalQuestions)*100;
+    document.querySelector(".progressFill").style.width=percent+"%";
 }
 
 </script>
