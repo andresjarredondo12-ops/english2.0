@@ -18,18 +18,18 @@ body{
 
 .container{
     padding:15px;
-    max-width:600px;
+    max-width:700px;
     margin:auto;
 }
 
 h1{ margin-top:10px; }
 
 button{
-    padding:12px;
-    margin:6px;
+    padding:10px;
+    margin:5px;
     border:none;
     border-radius:10px;
-    font-size:16px;
+    font-size:14px;
     cursor:pointer;
     background:white;
     font-weight:bold;
@@ -47,6 +47,14 @@ button:hover{ background:#ffd700; }
     margin:10px 0;
 }
 
+input{
+    padding:8px;
+    width:90%;
+    margin-top:5px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
 .progressBar{
     width:100%;
     height:18px;
@@ -60,6 +68,7 @@ button:hover{ background:#ffd700; }
     height:100%;
     background:#4caf50;
     width:0%;
+    transition:0.3s;
 }
 
 .level{
@@ -99,7 +108,7 @@ button:hover{ background:#ffd700; }
 <script>
 
 /* =========================
-   CONFIGURACIÓN GENERAL
+CONFIGURACIÓN
 ========================= */
 
 const levels = ["A1","A2","B1","B2","C1","C2"];
@@ -119,7 +128,7 @@ function saveProgress(){
 }
 
 /* =========================
-   VOZ
+VOZ
 ========================= */
 
 function speak(text){
@@ -133,7 +142,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 
 function listenAndCheck(correctAnswer, resultID){
     if(!SpeechRecognition){
-        alert("Usa Chrome en el móvil para reconocimiento de voz");
+        alert("Usa Chrome para reconocimiento de voz");
         return;
     }
 
@@ -143,22 +152,36 @@ function listenAndCheck(correctAnswer, resultID){
 
     recognition.onresult = function(event){
         let userSpeech = event.results[0][0].transcript.toLowerCase().trim();
-        let correct = correctAnswer.toLowerCase().trim();
-        let result = document.getElementById(resultID);
-
-        if(userSpeech.includes(correct)){
-            result.innerHTML="✅ Correcto";
-            result.style.color="green";
-            correctAnswers++;
-        }else{
-            result.innerHTML="❌ Incorrecto";
-            result.style.color="red";
-        }
+        checkAnswer(userSpeech, correctAnswer, resultID);
     };
 }
 
 /* =========================
-   NAVEGACIÓN
+VERIFICACIÓN
+========================= */
+
+function checkAnswer(userAnswer, correctAnswer, resultID){
+    let result = document.getElementById(resultID);
+
+    if(userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim()){
+        result.innerHTML="✅ Correcto";
+        result.style.color="green";
+        correctAnswers++;
+    }else{
+        result.innerHTML="❌ Incorrecto<br>✔ Respuesta correcta: "+correctAnswer;
+        result.style.color="red";
+    }
+
+    updateProgressBar();
+}
+
+function updateProgressBar(){
+    let percent = (correctAnswers/totalQuestions)*100;
+    document.querySelector(".progressFill").style.width = percent+"%";
+}
+
+/* =========================
+NAVEGACIÓN
 ========================= */
 
 function selectMode(mode){
@@ -179,99 +202,77 @@ function goHome(){
 }
 
 /* =========================
-   CONTENIDO POR NIVEL
+CONTENIDO
 ========================= */
 
 const kidsContent = {
-A1:["Red","Dog","Blue","Cat","One"],
-A2:["Apple","School","Water","Book","Happy"],
-B1:["Because","Family","Friend","Teacher","Playground"],
-B2:["Environment","Important","Different","Country","Beautiful"],
-C1:["Opportunity","Responsibility","Experience","Knowledge","Education"],
-C2:["Communication","Development","Achievement","Independence","Understanding"]
+A1:["Red","Dog","Cat","Hello","Bye"],
+A2:["I am happy","This is my book","I like apples","Good morning","Thank you"],
+B1:["I go to school","My best friend is kind","I play soccer","Today is sunny","I love my family"],
+B2:["I help my parents","We went to the park","I finished my homework","My teacher is friendly","I enjoy reading books"],
+C1:["I want to be a doctor","Education is important","Practice makes perfect","Learning is fun","We must respect others"],
+C2:["Communication is important","We should protect nature","Knowledge gives power","Teamwork builds success","Dream big and work hard"]
 };
 
 const adultContent = {
-A1:["hello","good morning","thank you","I work","my name is John"],
-A2:["I work every day","I like learning","This is important","We are ready","I have two years experience"],
-B1:["I am learning English","I can manage a team","This project is complex","I need more information","I have worked in sales"],
-B2:["I have experience in management","We achieved our goals","The company is growing","I solved the problem","This strategy is effective"],
-C1:["I would like to improve my professional skills","The market has changed significantly","Leadership requires responsibility","Global competition is increasing","We need a long term strategy"],
-C2:["Globalization has transformed international markets","Innovation drives economic growth","Strategic planning determines long term success","Sustainable development is essential","Effective communication is crucial in leadership"]
+A1:["Hello, how are you?","I am fine","Nice to meet you","Where is the bathroom?","I need help"],
+A2:["I work every day","I like learning English","Can you help me?","How much does this cost?","I live in this city"],
+B1:["I am looking for a job","I have experience in sales","Could you repeat that?","I need more information","What do you recommend?"],
+B2:["I have been working here for five years","We achieved our goals","This project is challenging","I solved the problem","Let's schedule a meeting"],
+C1:["I would like to improve my professional skills","The market has changed significantly","Leadership requires responsibility","We need a long term strategy","Customer satisfaction is essential"],
+C2:["Globalization has transformed international markets","Innovation drives economic growth","Strategic planning determines success","Sustainable development is necessary","Effective communication is crucial in leadership"]
 };
 
 /* =========================
-   CARGA NIÑOS
+CARGA CONTENIDO
 ========================= */
 
 function loadKids(){
-
-    if(progress.kidsIndex>=levels.length){
-        document.getElementById("kidsContent").innerHTML="<h2>🏆 Completaste C2</h2>";
-        return;
-    }
-
-    let levelName = levels[progress.kidsIndex];
-    let lessons = kidsContent[levelName];
-
-    totalQuestions = lessons.length;
-    correctAnswers = 0;
-
-    let html = `<p class="level">Nivel ${levelName}</p>`;
-    html += progressBar(0);
-
-    lessons.forEach((word,i)=>{
-        html+=`
-        <div class="card">
-            <h3>${word}</h3>
-            <button onclick="speak('${word}')">🔊 Escuchar</button>
-            <button onclick="listenAndCheck('${word}','k${i}')">🎤 Pronunciar</button>
-            <p id="k${i}" class="result"></p>
-        </div>
-        `;
-    });
-
-    html+=`<button onclick="evaluateLevel()">📊 Evaluar Nivel</button>`;
-    document.getElementById("kidsContent").innerHTML=html;
+    loadContent("kidsContent","kidsIndex","kids");
 }
-
-/* =========================
-   CARGA ADULTOS
-========================= */
 
 function loadAdult(){
+    loadContent("adultContent","adultIndex","adult");
+}
 
-    if(progress.adultIndex>=levels.length){
-        document.getElementById("adultContent").innerHTML="<h2>🏆 Completaste C2</h2>";
+function loadContent(contentVar,indexVar,mode){
+
+    if(progress[indexVar]>=levels.length){
+        document.getElementById(mode+"Content").innerHTML="<h2>🏆 Completaste C2</h2>";
         return;
     }
 
-    let levelName = levels[progress.adultIndex];
-    let lessons = adultContent[levelName];
+    let levelName = levels[progress[indexVar]];
+    let lessons = eval(contentVar)[levelName];
 
-    totalQuestions = lessons.length;
+    totalQuestions = lessons.length*2;
     correctAnswers = 0;
 
     let html = `<p class="level">Nivel ${levelName}</p>`;
     html += progressBar(0);
 
-    lessons.forEach((sentence,i)=>{
+    lessons.forEach((text,i)=>{
+
         html+=`
         <div class="card">
-            <h4>${sentence}</h4>
-            <button onclick="speak('${sentence}')">🔊 Escuchar</button>
-            <button onclick="listenAndCheck('${sentence}','a${i}')">🎤 Responder</button>
-            <p id="a${i}" class="result"></p>
+            <h4>${text}</h4>
+            <button onclick="speak('${text}')">🔊 Escuchar</button>
+            <button onclick="listenAndCheck('${text}','v${i}')">🎤 Pronunciar</button>
+            <p id="v${i}" class="result"></p>
+
+            <input type="text" id="w${i}" placeholder="Escribe aquí...">
+            <button onclick="checkAnswer(document.getElementById('w${i}').value,'${text}','t${i}')">✍ Verificar Escritura</button>
+            <p id="t${i}" class="result"></p>
         </div>
         `;
     });
 
     html+=`<button onclick="evaluateLevel()">📊 Evaluar Nivel</button>`;
-    document.getElementById("adultContent").innerHTML=html;
+    document.getElementById(mode+"Content").innerHTML=html;
 }
 
 /* =========================
-   EVALUACIÓN
+EVALUACIÓN
 ========================= */
 
 function evaluateLevel(){
@@ -290,7 +291,7 @@ function evaluateLevel(){
 }
 
 /* =========================
-   BARRA PROGRESO
+BARRA PROGRESO
 ========================= */
 
 function progressBar(percent){
