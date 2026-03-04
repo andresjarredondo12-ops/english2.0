@@ -124,8 +124,7 @@ let correctAnswers=0;
 let totalQuestions=0;
 let currentMode="";
 let currentPhase="audio";
-let currentSentence="";
-let selectedWords=[];
+let exerciseStates={};
 
 function saveProgress(){
     localStorage.setItem("progress",JSON.stringify(progress));
@@ -157,6 +156,8 @@ function listenAndCheck(correct,id){
 
 function verify(user,correct,id){
     let el=document.getElementById(id);
+    if(el.dataset.answered==="true") return;
+
     if(user.toLowerCase().trim()===correct.toLowerCase().trim()){
         el.innerHTML="✅ Correcto";
         el.style.color="green";
@@ -165,12 +166,15 @@ function verify(user,correct,id){
         el.innerHTML="❌ Incorrecto<br>✔ "+correct;
         el.style.color="red";
     }
+
+    el.dataset.answered="true";
     updateBar();
 }
 
 function updateBar(){
     let percent=(correctAnswers/totalQuestions)*100;
-    document.querySelector(".progressFill").style.width=percent+"%";
+    let bar=document.querySelector(".progressFill");
+    if(bar) bar.style.width=percent+"%";
 }
 
 /* CONTENIDO */
@@ -213,7 +217,12 @@ function goHome(){
 /* CARGA */
 
 function loadContent(){
+
+    exerciseStates={};
+    correctAnswers=0;
+
     let index=currentMode==="kids"?progress.kidsIndex:progress.adultIndex;
+
     if(index>=levels.length){
         document.getElementById(currentMode+"Content").innerHTML="<h2>🏆 Curso completado</h2>";
         return;
@@ -222,22 +231,27 @@ function loadContent(){
     let level=levels[index];
     let lessons=content[currentMode][level][currentPhase];
 
-    correctAnswers=0;
-    totalQuestions=currentPhase==="audio"?lessons.length:lessons.length*2;
+    totalQuestions=currentPhase==="audio"
+        ? lessons.length
+        : lessons.length*2;
 
     let html=`<p class="level">Nivel ${level}</p>`;
     html+=`<p class="phase">Fase: ${currentPhase.toUpperCase()}</p>`;
     html+=progressBar(0);
 
     lessons.forEach((text,i)=>{
+
         if(currentPhase==="audio"){
+
             html+=`
             <div class="card">
             <button onclick="speak('${text}')">🔊 Escuchar</button>
             <button onclick="listenAndCheck('${text}','r${i}')">🎤 Pronunciar</button>
             <p id="r${i}"></p>
             </div>`;
+
         }else{
+
             html+=`
             <div class="card">
             <p><strong>Escribe:</strong></p>
@@ -248,7 +262,7 @@ function loadContent(){
             <p><strong>Ordena la frase:</strong></p>
             <div id="words${i}"></div>
             <p id="order${i}"></p>
-            <button onclick="checkOrder('${text}','order${i}')">Comprobar Orden</button>
+            <button onclick="checkOrder('${text}',${i})">Comprobar Orden</button>
             </div>`;
         }
     });
@@ -263,51 +277,81 @@ function loadContent(){
     }
 }
 
+/* JUEGO ORDENAR */
+
 function createWordGame(sentence,index){
+
     let words=sentence.split(" ").sort(()=>Math.random()-0.5);
+
+    exerciseStates[index]={
+        correct:sentence,
+        selected:[],
+        answered:false
+    };
+
     let container=document.getElementById("words"+index);
     container.innerHTML="";
-    selectedWords=[];
+
     words.forEach(word=>{
+
         let span=document.createElement("span");
         span.className="word";
         span.innerText=word;
+
         span.onclick=function(){
-            selectedWords.push(word);
+
+            if(exerciseStates[index].answered) return;
+
+            exerciseStates[index].selected.push(word);
             span.classList.add("selected");
-            document.getElementById("order"+index).innerText=selectedWords.join(" ");
+
+            document.getElementById("order"+index)
+                .innerText=exerciseStates[index].selected.join(" ");
         };
+
         container.appendChild(span);
     });
 }
 
-function checkOrder(correct,id){
-    let user=selectedWords.join(" ");
+function checkOrder(correct,index){
+
+    let state=exerciseStates[index];
+    if(state.answered) return;
+
+    let user=state.selected.join(" ");
+
     if(user===correct){
-        document.getElementById(id).innerHTML="✅ Orden correcto";
+        document.getElementById("order"+index).innerHTML="✅ Orden correcto";
         correctAnswers++;
     }else{
-        document.getElementById(id).innerHTML="❌ Incorrecto<br>✔ "+correct;
+        document.getElementById("order"+index).innerHTML="❌ Incorrecto<br>✔ "+correct;
     }
+
+    state.answered=true;
     updateBar();
-    selectedWords=[];
 }
 
 /* EVALUACIÓN */
 
 function evaluate(){
+
     let percent=(correctAnswers/totalQuestions)*100;
 
     if(percent>=PASS_PERCENT){
+
         if(currentPhase==="audio"){
             currentPhase="grammar";
         }else{
+
             if(currentMode==="kids") progress.kidsIndex++;
             else progress.adultIndex++;
+
             saveProgress();
             currentPhase="audio";
         }
+
         loadContent();
+
     }else{
         alert("Necesitas 80%. Obtuviste "+percent.toFixed(0)+"%");
         loadContent();
